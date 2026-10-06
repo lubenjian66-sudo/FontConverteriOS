@@ -14,7 +14,9 @@ jobs:
         run: brew install xcodegen
 
       - name: Restore Python iOS runtime
-        run: ./PythonRuntime/Scripts/restore_python_runtime.sh
+        run:
+         chmod +x ./PythonRuntime/Scripts/restore_python_runtime.sh
+         ./PythonRuntime/Scripts/restore_python_runtime.sh
 
       - name: Generate Xcode project
         run: xcodegen generate
