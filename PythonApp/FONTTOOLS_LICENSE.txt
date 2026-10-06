@@ -1,0 +1,4 @@
+fontTools is distributed under the MIT License.
+Version vendored: 4.63.0
+
+LICENSE
