@@ -6,24 +6,57 @@ on:
 jobs:
   build:
     runs-on: macos-14
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Show installed Xcode versions
+        run: |
+          echo "Installed Xcode versions:"
+          ls -1 /Applications | grep '^Xcode' || true
+          echo
+          xcodebuild -version
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+
+          for XCODE in \
+            "/Applications/Xcode_16.4.app" \
+            "/Applications/Xcode_16.3.app" \
+            "/Applications/Xcode_16.2.app" \
+            "/Applications/Xcode_16.1.app" \
+            "/Applications/Xcode_16.0.app"
+          do
+            if [ -d "$XCODE" ]; then
+              echo "Using $XCODE"
+              sudo xcode-select -s "$XCODE"
+              break
+            fi
+          done
+
+          echo
+          xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Restore Python iOS runtime
-        run:
-         chmod +x ./PythonRuntime/Scripts/restore_python_runtime.sh
-         ./PythonRuntime/Scripts/restore_python_runtime.sh
+        run: |
+          set -euo pipefail
+          chmod +x ./PythonRuntime/Scripts/*.sh
+          ./PythonRuntime/Scripts/restore_python_runtime.sh
 
       - name: Generate Xcode project
-        run: xcodegen generate
+        run: |
+          set -euo pipefail
+          xcodegen generate
 
       - name: Build unsigned .app
         run: |
           set -euo pipefail
+
           xcodebuild \
             -project FontConverteriOS.xcodeproj \
             -scheme FontConverter \
@@ -37,10 +70,20 @@ jobs:
       - name: Locate and package .app
         run: |
           set -euo pipefail
-          APP="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -n 1)"
+
+          APP="$(find build/Build/Products/Release-iphoneos \
+            -maxdepth 1 \
+            -name '*.app' \
+            -type d | head -n 1)"
+
           test -n "$APP"
+
+          echo "Found app: $APP"
+
           mkdir -p artifact
+
           ditto "$APP" "artifact/FontConverter.app"
+
           cd artifact
           zip -qry FontConverter-unsigned.app.zip FontConverter.app
 
