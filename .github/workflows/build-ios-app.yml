@@ -1,0 +1,49 @@
+name: Build iOS .app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Restore Python iOS runtime
+        run: ./PythonRuntime/Scripts/restore_python_runtime.sh
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned .app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project FontConverteriOS.xcodeproj \
+            -scheme FontConverter \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Locate and package .app
+        run: |
+          set -euo pipefail
+          APP="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -n 1)"
+          test -n "$APP"
+          mkdir -p artifact
+          ditto "$APP" "artifact/FontConverter.app"
+          cd artifact
+          zip -qry FontConverter-unsigned.app.zip FontConverter.app
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FontConverter-iOS-app
+          path: artifact/FontConverter-unsigned.app.zip
