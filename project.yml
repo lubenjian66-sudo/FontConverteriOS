@@ -1,0 +1,37 @@
+name: FontConverteriOS
+options:
+  bundleIdPrefix: com.fontconverter
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    IPHONEOS_DEPLOYMENT_TARGET: 13.0
+    ENABLE_BITCODE: NO
+    USER_SCRIPT_SANDBOXING: NO
+    SWIFT_OPTIMIZATION_LEVEL: "-O"
+targets:
+  FontConverter:
+    type: application
+    platform: iOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: FontConverter
+    resources:
+      - path: PythonApp
+      - path: Resources
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.fontconverter.app
+      INFOPLIST_FILE: FontConverter/Info.plist
+      FRAMEWORK_SEARCH_PATHS: ["$(SRCROOT)/Vendor"]
+      HEADER_SEARCH_PATHS: ["$(BUILT_PRODUCTS_DIR)/Python.framework/Headers"]
+      LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/Frameworks"]
+    preBuildScripts:
+      - name: Process Python libraries
+        script: |
+          set -e
+          source "$SRCROOT/Vendor/Python.xcframework/build/build_utils.sh"
+          install_python "$SRCROOT/Vendor/Python.xcframework" "$SRCROOT/PythonApp"
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - framework: Vendor/Python.xcframework
+        embed: true
+        codeSign: true
